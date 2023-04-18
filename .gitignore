@@ -18,3 +18,4 @@ venv
 .idea
 .DS_Store
 .vscode
+data
