@@ -2,52 +2,38 @@ package pipe
 
 import (
 	"fmt"
-
-	"golang.org/x/sys/windows"
+	"os"
+	"syscall"
 )
 
-func main() {
-	// Указываем путь и имя именованного канала
-	pipePath := `\\.\pipe\antivs`
-
-	// Создаем именованный канал с использованием CreateNamedPipe
-	hPipe, err := windows.CreateNamedPipe(
-		pipePath,
-		windows.PIPE_ACCESS_DUPLEX,
-		windows.PIPE_TYPE_BYTE|windows.PIPE_READMODE_BYTE|windows.PIPE_WAIT,
-		windows.PIPE_UNLIMITED_INSTANCES,
-		512,
-		512,
-		0,
-		nil,
-	)
+func Pipe() {
+	// Создаем именованный канал
+	err := syscall.Mkfifo(`\\.\pipe\mychannel1`, 0666)
 	if err != nil {
-		fmt.Println("Failed to create named pipe:", err)
+		fmt.Println("Ошибка создания канала:", err)
 		return
-	}
-	defer windows.CloseHandle(hPipe)
-
-	// Ожидаем подключения клиента
-	fmt.Println("Waiting for client to connect...")
-	err = windows.ConnectNamedPipe(hPipe, nil)
-	if err != nil {
-		fmt.Println("Failed to connect named pipe:", err)
-		return
+	} else {
+		fmt.Println("Создали канал:", err)
 	}
 
-	// Чтение сообщений из именованного канала
-	var buffer [512]byte
+	// Открываем канал на чтение
+	file, err := os.Open(`\\.\pipe\mychannel1`)
+	if err != nil {
+		fmt.Println("Ошибка открытия канала:", err)
+		return
+	} else {
+		fmt.Println("Открыли канал:", err)
+	}
+	defer file.Close()
+
+	// Читаем сообщения из канала и выводим их на экран
+	buffer := make([]byte, 1024)
 	for {
-		// Чтение данных из именованного канала
-		n, err := windows.ReadFile(hPipe, buffer[:])
+		n, err := file.Read(buffer)
 		if err != nil {
-			fmt.Println("Failed to read from named pipe:", err)
+			fmt.Println("Ошибка чтения из канала:", err)
 			return
 		}
-
-		// Выводим прочитанные данные
-		fmt.Println("Received message:", string(buffer[:n]))
-
-		// Ожидаем следующее сообщение
+		fmt.Println("Получено сообщение:", string(buffer[:n]))
 	}
 }
