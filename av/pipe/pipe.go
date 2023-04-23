@@ -1,39 +1,27 @@
 package pipe
 
 import (
+	"bufio"
 	"fmt"
 	"os"
-	"syscall"
+	"strings"
 )
 
 func Pipe() {
-	// Создаем именованный канал
-	err := syscall.Mkfifo(`\\.\pipe\mychannel1`, 0666)
-	if err != nil {
-		fmt.Println("Ошибка создания канала:", err)
-		return
-	} else {
-		fmt.Println("Создали канал:", err)
-	}
+	// создаем новый сканер для чтения stdin
+	scanner := bufio.NewScanner(os.Stdin)
 
-	// Открываем канал на чтение
-	file, err := os.Open(`\\.\pipe\mychannel1`)
-	if err != nil {
-		fmt.Println("Ошибка открытия канала:", err)
-		return
-	} else {
-		fmt.Println("Открыли канал:", err)
-	}
-	defer file.Close()
-
-	// Читаем сообщения из канала и выводим их на экран
-	buffer := make([]byte, 1024)
-	for {
-		n, err := file.Read(buffer)
-		if err != nil {
-			fmt.Println("Ошибка чтения из канала:", err)
-			return
+	// читаем stdin до тех пор, пока не будет получено сообщение
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.TrimSpace(line) == "stop" {
+			break
 		}
-		fmt.Println("Получено сообщение:", string(buffer[:n]))
+		fmt.Println("Received:", line)
+	}
+
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintln(os.Stderr, "Error reading stdin:", err)
+		return
 	}
 }

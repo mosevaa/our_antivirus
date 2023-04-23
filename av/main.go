@@ -2,7 +2,6 @@ package main
 
 import (
 	"our_antivirus/av/db"
-	"our_antivirus/av/pipe"
 	"our_antivirus/av/scan"
 )
 
@@ -12,7 +11,7 @@ func main() {
 
 	scan.Scanning()
 
-	pipe.Pipe()
+	//pipe.Pipe()
 
 	// положить файл в карантин
 	//scan.Quarantine("./../folder/file.txt", "quarantine")
