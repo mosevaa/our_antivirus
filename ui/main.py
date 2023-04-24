@@ -1,3 +1,4 @@
+import subprocess
 import sys, os, time, threading
 from main_window import *
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -7,24 +8,26 @@ from subprocess import Popen, PIPE
 os.environ['PYTHONIOENCODING'] = 'utf-8'
 
 
-def buffer_to_str(buf):
-    codec = QtCore.QTextCodec.codecForName("UTF-8")
-    return str(codec.toUnicode(buf))
-
-
-class Process(QtCore.QObject):
+class MainWin(QtWidgets.QMainWindow):
     def __init__(self):
-        self.stdout = QtCore.pyqtSignal(str)
-        self.stderr = QtCore.pyqtSignal(str)
-        self.finished = QtCore.pyqtSignal(bool)
+        QtWidgets.QWidget.__init__(self)
+        self.ui = Ui_MainWindow()
+        self.ui.setupUi(self)
+        self.ui.pushButton_2.clicked.connect(self.start)
 
-    def start(self, cmd, args):
-        process = QtCore.QProcess()
-        process.setProgram(cmd)
-        process.setArguments(args)
-        process.readyReadStandardError.connect(lambda: self.stderr.emit(buffer_to_str(process.readAllStandardError())))
-        process.readyReadStandardOutput.connect(lambda: self.stderr.emit(buffer_to_str(process.readAllStandardOutput())))
-        process.finished.connect(self.finished)
-        process.start()
+    def message(self, m):
+        self.ui.textEdit_2.appendPlainText(m)
 
-        self._process = process
+    def start(self):
+        self.message('start')
+        cmd = 'go run C:\\Users\\Lesya\\GolandProjects\\our_antivirus\\av\\main.go'
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+        self.ui.textEdit_2.appendPlainText(str(stdout.decode()+stderr.decode()))
+
+
+if __name__ == "__main__":
+    app = QtWidgets.QApplication(sys.argv)
+    MyApp = MainWin()
+    MyApp.show()
+    sys.exit(app.exec_())
