@@ -101,7 +101,7 @@ class Ui_MainWindow(object):
 "Найденные угрозы: 5\n"
 "Зараженные объекты: 1"))
         self.pushButton_4.setText(_translate("MainWindow", "Очистить окно вывода"))
-        self.pushButton_3.setText(_translate("MainWindow", "Карантин"))
+        self.pushButton_3.setText(_translate("MainWindow", "Редактировать карантин"))
         self.pushButton_5.setText(_translate("MainWindow", "Остановить сервис"))
 
 

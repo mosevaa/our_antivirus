@@ -40,7 +40,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
         self.checkBox = QtWidgets.QCheckBox(self.verticalLayoutWidget_2)
-        self.checkBox.setChecked(True)
+        self.checkBox.setChecked(False)
         self.checkBox.setObjectName("checkBox")
         self.verticalLayout_2.addWidget(self.checkBox)
         self.checkBox_2 = QtWidgets.QCheckBox(self.verticalLayoutWidget_2)
@@ -67,12 +67,16 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Антивирус"))
         self.label.setText(_translate("MainWindow", "Выберите файлы для добавления в карантин:"))
         self.checkBox.setText(_translate("MainWindow", "путь 1"))
         self.checkBox_2.setText(_translate("MainWindow", "путь 2"))
         self.pushButton_2.setText(_translate("MainWindow", "Очистить выбор"))
         self.pushButton.setText(_translate("MainWindow", "Добавить"))
+
+    def create_comboboxes(self, files_list):
+        pass
+
 
 
 class Quarantine_Add(QtWidgets.QMainWindow):
