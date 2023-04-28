@@ -91,15 +91,16 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.pushButton.setText(_translate("MainWindow", "Browse..."))
+        self.pushButton.setText(_translate("MainWindow", "Выбрать..."))
         self.label.setText(_translate("MainWindow", "Вид сканирования:"))
         self.radioButton.setText(_translate("MainWindow", "Мониторинг"))
         self.radioButton_2.setText(_translate("MainWindow", "Сканирование по расписанию"))
         self.pushButton_2.setText(_translate("MainWindow", "Запуск сканирования"))
         self.label_2.setText(_translate("MainWindow", "Результат сканирования:\n"
-"Просканированные объекты: 1\n"
-"Найденные угрозы: 5\n"
-"Зараженные объекты: 1"))
+"Просканированные объекты: \n"
+"Найденные угрозы: \n"
+"Зараженные объекты: "
+                                                      ""))
         self.pushButton_4.setText(_translate("MainWindow", "Очистить окно вывода"))
         self.pushButton_3.setText(_translate("MainWindow", "Редактировать карантин"))
         self.pushButton_5.setText(_translate("MainWindow", "Остановить сервис"))
