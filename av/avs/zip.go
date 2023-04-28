@@ -3,7 +3,7 @@ package avs
 import (
 	"archive/zip"
 	"log"
-	"our_antivirus/av/avs/utils"
+	"our_antivirus/av/utils"
 
 	"github.com/beevik/prefixtree"
 	"github.com/bodgit/sevenzip"
