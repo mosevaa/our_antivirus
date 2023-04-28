@@ -2,12 +2,10 @@ import subprocess
 import sys, os, time, threading
 import main_window
 import quarantine_delete_window
+import set_time_window
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QFileDialog
 from subprocess import Popen, PIPE
-from PyQt5.QtGui     import *
-from PyQt5.QtCore    import *
-from PyQt5.QtWidgets import *
 os.environ['PYTHONIOENCODING'] = 'utf-8'
 
 
@@ -19,26 +17,16 @@ class MainWin(QtWidgets.QMainWindow):
         self.ui.pushButton_2.clicked.connect(self.start)
         self.ui.pushButton_5.clicked.connect(self.cleat_log_text_edit)
         self.ui.pushButton_3.clicked.connect(self.change_quarantine)
-
-        self.textEdit = QPlainTextEdit()
-        #self.textEdit.setFont(QFont('Arial', 11))
-
-        self.pushButton = QPushButton("Open Directory")
         self.ui.pushButton.clicked.connect(self.getDirectory)
-
-        self.ui.radioButton.clicked.connect(self.create_bot)
-        self.ui.radioButton_2.clicked.connect(self.create_bot)
-
 
     def message(self, m):
         self.ui.textEdit_2.appendPlainText(m)
 
     def start(self):
-        self.message('start')
-        cmd = 'go run C:\\Users\\Lesya\\GolandProjects\\our_antivirus\\av\\main.go'
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = p.communicate()
-        self.ui.textEdit_2.appendPlainText(str(stdout.decode() + stderr.decode()))
+        if self.ui.radioButton.isChecked():
+            self.monitor()
+        elif self.ui.radioButton_2.isChecked():
+            self.schedule_scan()
 
     def cleat_log_text_edit(self):
         self.ui.textEdit_2.setPlainText('')
@@ -46,9 +34,9 @@ class MainWin(QtWidgets.QMainWindow):
     def change_quarantine(self):
         pass
 
-
-    def getDirectory(self):                      
-        def getOpenFilesAndDirs(parent=None, caption='', directory='', 
+    @QtCore.pyqtSlot()
+    def getDirectory(self):
+        def getOpenFilesAndDirs(parent=None, caption='', directory='',
                         filter='', initialFilter='', options=None):
             def updateText():
                 # update the contents of the line edit widget with the selected files
@@ -94,13 +82,22 @@ class MainWin(QtWidgets.QMainWindow):
         if fname:
             self.ui.textEdit.setText(fname)
 
-    def create_bot(self):
-        if self.ui.radioButton.isChecked():
-           print("Выбрана: Мониторинг")
-        elif self.ui.radioButton_2.isChecked():
-           print("Выбрана: Сканирование по расписанию")    
-        else:
-           print("Ничего не выбрано.") 
+    def monitor(self):
+        pass
+
+    def schedule_scan(self):
+        self.message('start')
+        cmd = 'go run C:\\Users\\Lesya\\GolandProjects\\our_antivirus\\av\\main.go'
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+        self.ui.textEdit_2.appendPlainText(str(stdout.decode() + stderr.decode()))
+
+
+class SchedWin(QtWidgets.QMainWindow):
+    def __init(self):
+        QtWidgets.QWidget.__init__(self)
+        self.ui = set_time_window.Ui_MainWindow()
+        self.ui.setupUi(self)
 
 
 
@@ -120,5 +117,6 @@ class QuarantineWin(QtWidgets.QMainWindow):
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     MyApp = MainWin()
+    sched_win = SchedWin()
     MyApp.show()
     sys.exit(app.exec_())

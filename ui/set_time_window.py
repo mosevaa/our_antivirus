@@ -28,11 +28,14 @@ class Ui_MainWindow(object):
         self.label = QtWidgets.QLabel(self.horizontalLayoutWidget)
         self.label.setObjectName("label")
         self.horizontalLayout.addWidget(self.label)
-        self.textBrowser = QtWidgets.QTextBrowser(self.horizontalLayoutWidget)
+        self.textBrowser = QtWidgets.QTextEdit(self.horizontalLayoutWidget)
         self.textBrowser.setMinimumSize(QtCore.QSize(111, 31))
         self.textBrowser.setMaximumSize(QtCore.QSize(111, 31))
         self.textBrowser.setObjectName("textBrowser")
         self.horizontalLayout.addWidget(self.textBrowser)
+        self.pushButton = QtWidgets.QPushButton(self.horizontalLayoutWidget)
+        self.pushButton.setObjectName("pushButton")
+        self.horizontalLayout.addWidget(self.pushButton)
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
@@ -44,7 +47,8 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.label.setText(_translate("MainWindow", "Введите временной промежуток(в секундах):"))
+        self.pushButton.setText(_translate("MainWindow", "Продолжить"))
+        self.label.setText(_translate("MainWindow", "Введите временной\nпромежуток(в секундах):"))
 
 
 class SetTime(QtWidgets.QMainWindow):
