@@ -1,12 +1,70 @@
 import subprocess
-import sys, os, time, threading
+import sys, os, time
+from PyQt5 import QtCore, QtGui, QtWidgets
+from subprocess import Popen, PIPE
+from datetime import timedelta, datetime
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+
 import main_window
 import quarantine_delete_window
-import set_time_window
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QFileDialog
-from subprocess import Popen, PIPE
+
 os.environ['PYTHONIOENCODING'] = 'utf-8'
+
+
+class SchedScanner(QtCore.QThread):
+    stdout = QtCore.pyqtSignal(str)
+    next_scan = QtCore.pyqtSignal(str)
+
+    def __init__(self, path, period):
+        super().__init__()
+        self.path = path
+        self.period = period
+
+    def run(self):
+        while True:
+            time.sleep(self.period)
+            with Popen(["../main.exe", self.path], stdout=PIPE) as p:
+                while True:
+                    text = p.stdout.read1().decode("utf-8")
+                    time.sleep(0.1)
+
+                    if text == "":
+                        break
+
+                    self.stdout.emit(text)
+                scan_time = datetime.now() + timedelta(seconds=self.period)
+                self.next_scan.emit(str(scan_time.hour)+":"+str(scan_time.minute))
+
+
+class Monitoring:
+    def __init__(self):
+        self.last_trigger = time.time()
+        self.path = None
+
+
+class MonHandler(FileSystemEventHandler):
+    def on_created(self, event):
+        if not os.path.isdir(event.src_path) and (time.time() - monitoring.last_trigger) > 1:
+            monitoring.last_trigger = time.time()
+            my_app.message(
+                f"Created new file {event.src_path}\nStarting directory scan..."
+            )
+            cmd = "" #command to start scan
+            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = p.communicate()
+            my_app.message(str(stdout.decode()+stderr.decode()))
+
+    def on_modified(self, event):
+        if not os.path.isdir(event.src_path) and (time.time() - monitoring.last_trigger) > 1:
+            monitoring.last_trigger = time.time()
+            my_app.message(
+                f"Changed file {event.src_path}\nStarting directory scan..."
+            )
+            cmd = "" #command to start scan
+            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = p.communicate()
+            my_app.message(str(stdout.decode()+stderr.decode()))
 
 
 class MainWin(QtWidgets.QMainWindow):
@@ -15,18 +73,38 @@ class MainWin(QtWidgets.QMainWindow):
         self.ui = main_window.Ui_MainWindow()
         self.ui.setupUi(self)
         self.ui.pushButton_2.clicked.connect(self.start)
-        self.ui.pushButton_5.clicked.connect(self.cleat_log_text_edit)
+        self.ui.pushButton_4.clicked.connect(self.cleat_log_text_edit)
         self.ui.pushButton_3.clicked.connect(self.change_quarantine)
-        self.ui.pushButton.clicked.connect(self.getDirectory)
+        self.ui.pushButton.clicked.connect(self.get_directory)
+        self.ui.pushButton_5.clicked.connect(self.stop_server)
 
     def message(self, m):
         self.ui.textEdit_2.appendPlainText(m)
 
     def start(self):
         if self.ui.radioButton.isChecked():
-            self.monitor()
+            if self.ui.textEdit.toPlainText() != "":
+                monitoring.path = self.ui.textEdit.toPlainText()
+                self.message(f"Set path ro monitor: {monitoring.path}")
+                self.event_handler = MonHandler()
+                self.observer = Observer()
+                self.observer.schedule(self.event_handler, path=monitoring.path, recursive=True)
+                self.observer.start()
+            else:
+                self.message("Please, browse file or directory to scan")
         elif self.ui.radioButton_2.isChecked():
-            self.schedule_scan()
+            period, ok = QtWidgets.QInputDialog.getInt(self, 'Int', 'Enter')
+            self.message(f"Period to scan: {period}")
+            if self.ui.textEdit.toPlainText() != "" :
+                self.sched_scanner = SchedScanner(
+                    self.ui.textEdit.toPlainText(),
+                    period
+                )
+                self.sched_scanner.stdout.connect(self.ui.textEdit_2.appendPlainText)
+                self.sched_scanner.next_scan.connect(self.ui.textEdit_2.appendPlainText)
+                self.sched_scanner.start()
+            else:
+                self.message("Please, browse file or directory to scan")
 
     def cleat_log_text_edit(self):
         self.ui.textEdit_2.setPlainText('')
@@ -34,11 +112,19 @@ class MainWin(QtWidgets.QMainWindow):
     def change_quarantine(self):
         pass
 
+    def stop_server(self):
+        if self.ui.radioButton.isChecked():
+            self.observer.stop()
+            self.message("Stop monitoring directory")
+        elif self.ui.radioButton_2.isChecked():
+            self.sched_scanner.terminate()
+            self.message("Stop scheduler scanning")
+
     @QtCore.pyqtSlot()
-    def getDirectory(self):
-        def getOpenFilesAndDirs(parent=None, caption='', directory='',
+    def get_directory(self):
+        def get_open_files_and_dirs(parent=None, caption='', directory='',
                         filter='', initialFilter='', options=None):
-            def updateText():
+            def update_text():
                 # update the contents of the line edit widget with the selected files
                 selected = []
                 for index in view.selectionModel().selectedRows():
@@ -68,42 +154,24 @@ class MainWin(QtWidgets.QMainWindow):
             # the actual contents are created inside a QStackedWidget; they are a 
             # QTreeView and a QListView, and the tree is only used when the 
             # viewMode is set to QFileDialog.Details, which is not this case
-            stackedWidget = dialog.findChild(QtWidgets.QStackedWidget)
-            view = stackedWidget.findChild(QtWidgets.QListView)
-            view.selectionModel().selectionChanged.connect(updateText)
-            lineEdit = dialog.findChild(QtWidgets.QLineEdit)
+            stacked_widget = dialog.findChild(QtWidgets.QStackedWidget)
+            view = stacked_widget.findChild(QtWidgets.QListView)
+            view.selectionModel().selectionChanged.connect(update_text)
+            line_edit = dialog.findChild(QtWidgets.QLineEdit)
             # clear the line edit contents whenever the current directory changes
             dialog.directoryEntered.connect(lambda: self.ui.textEdit.setText(''))
 
             dialog.exec_()
             return dialog.selectedFiles()
-        fname = getOpenFilesAndDirs(self, "Open file or directory", "", "")[0]
+        fname = get_open_files_and_dirs(self, "Open file or directory", "", "")[0]
         
         if fname:
             self.ui.textEdit.setText(fname)
 
-    def monitor(self):
-        pass
-
-    def schedule_scan(self):
-        self.message('start')
-        cmd = 'go run C:\\Users\\Lesya\\GolandProjects\\our_antivirus\\av\\main.go'
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = p.communicate()
-        self.ui.textEdit_2.appendPlainText(str(stdout.decode() + stderr.decode()))
-
-
-class SchedWin(QtWidgets.QMainWindow):
-    def __init(self):
-        QtWidgets.QWidget.__init__(self)
-        self.ui = set_time_window.Ui_MainWindow()
-        self.ui.setupUi(self)
-
-
 
 class QuarantineWin(QtWidgets.QMainWindow):
-    def __init__(self, path):
-        QtWidgets.QWidget.__init__(self)
+    def __init__(self, path, parent=None):
+        QtWidgets.QWidget.__init__(self, parent)
         self.ui = quarantine_delete_window.Ui_MainWindow()
         self.ui.setupUi(self)
         self.scanning_path = path
@@ -116,7 +184,7 @@ class QuarantineWin(QtWidgets.QMainWindow):
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
-    MyApp = MainWin()
-    sched_win = SchedWin()
-    MyApp.show()
+    my_app = MainWin()
+    monitoring = Monitoring()
+    my_app.show()
     sys.exit(app.exec_())

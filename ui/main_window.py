@@ -90,7 +90,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Antivirus"))
         self.pushButton.setText(_translate("MainWindow", "Выбрать..."))
         self.label.setText(_translate("MainWindow", "Вид сканирования:"))
         self.radioButton.setText(_translate("MainWindow", "Мониторинг"))
