@@ -1,39 +1,25 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
-	"our_antivirus/av/db"
-	"our_antivirus/av/scan"
+	"log"
+	"our_antivirus/av/avs"
+	"our_antivirus/av/database"
+	searchtree "our_antivirus/av/search-tree"
+	"strconv"
 	"strings"
+
+	"github.com/fatih/color"
 )
 
 // основная часть программы
 func main() {
 
-	cmd := flag.String("cmd", "", "")
-	flag.Parse()
-	// fmt.Printf("my cmd: \"%v\"\n", string(*cmd))
-
-	if strings.Contains(string(*cmd), "scan_all") {
-		fmt.Println("scan_all")
-		scan.Scanning()
-	} else if strings.Contains(string(*cmd), "quarantine") {
-		fmt.Println("quarantine")
-		scan.Restore("quarantine/file.txt", "../folder/file.txt")
-	} else if strings.Contains(string(*cmd), "scan_one_file") {
-		fmt.Println("scan_one_file")
-		scan.ScanFile("//path_to_file")
-	} else if strings.Contains(string(*cmd), "start") {
-		fmt.Println("start")
-	} else if strings.Contains(string(*cmd), "stop") {
-		fmt.Println("stop")
-	} else {
-		fmt.Println("error")
+	if err := run(); err != nil {
+		log.Fatal(err)
 	}
-
-	db.Connect_db()
-
 	//scan.Scanning()
 
 	//pipe.Pipe()
@@ -43,29 +29,91 @@ func main() {
 
 	// убрать файл из карантина
 	//scan.Restore("quarantine/file.txt", "../folder/file.txt")
+}
 
-	//--------------------
-	// signatures := []string{
-	// 	"Signature 1",
-	// 	"Signature 2",
-	// 	"Signature 3",
-	// }
+func run() error {
 
-	// // Открыть файл для записи
-	// file, err := os.Create("../folder/signatures.txt")
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer file.Close()
+	log.Println("Programm started")
+	if err := database.Open(); err != nil {
+		return err
+	}
+	log.Println("Database connection opened")
+	defer database.Close()
 
-	// // Записать каждую сигнатуру в файл
-	// for _, sig := range signatures {
-	// 	_, err := file.WriteString(sig + "\n")
-	// 	if err != nil {
-	// 		panic(err)
+	if err := searchtree.BuildSearchTree(); err != nil {
+		return err
+	}
+
+	ptree := searchtree.GetSearchTree()
+	log.Println("Prefix tree loaded")
+
+	// fmt.Printf("my cmd: \"%v\"\n", string(*cmd))
+
+	cmd := flag.String("cmd", "", "")
+	flag.Parse()
+
+	if strings.Contains(string(*cmd), "scan_all") {
+		fmt.Println("scan_all")
+		// вот тут указать папку или файл
+		if err := avs.FindSignatures("/Users/andreysergeev/Documents/GitHub/antivirus/our_antivirus/folder", ptree); err != nil {
+			return err
+		}
+		printResults()
+
+	} else if strings.Contains(string(*cmd), "quarantine") {
+		fmt.Println("quarantine")
+		//scan.Restore("quarantine/file.txt", "../folder/file.txt")
+	} else if strings.Contains(string(*cmd), "scan_one_file") {
+		fmt.Println("scan_one_file")
+		//scan.ScanFile("//path_to_file")
+	} else if strings.Contains(string(*cmd), "start") {
+		fmt.Println("start")
+	} else if strings.Contains(string(*cmd), "stop") {
+		fmt.Println("stop")
+	} else {
+		fmt.Println("error")
+	}
+
+	// if len(os.Args) > 1 {
+	// 	for index, scanDir := range os.Args {
+	// 		if index == 0 {
+	// 			continue
+	// 		}
+
+	// 		log.Println("Start search in location:", scanDir)
+	// 		if err := avs.FindSignatures(scanDir, ptree); err != nil {
+	// 			return err
+	// 		}
+
+	// 		printResults()
 	// 	}
 	// }
 
-	// fmt.Println("Сигнатуры записаны в файл signatures.txt")
-	//--------------------
+	return nil
+}
+
+func printResults() {
+	searchResults := avs.SearchResults()
+
+	if b, err := json.MarshalIndent(searchResults, "", "\t"); err == nil {
+		log.Printf("Scan verbose results: %+v\n", string(b))
+	}
+
+	infectedFilesScan := map[string]struct{}{}
+	for file, signStats := range searchResults {
+		if len(signStats) > 0 {
+			infectedFilesScan[file] = struct{}{}
+		}
+	}
+	infectedFiles := []string{}
+	for file, _ := range infectedFilesScan {
+		infectedFiles = append(infectedFiles, file)
+	}
+	valid := len(searchResults) - len(infectedFiles)
+
+	fmt.Printf(
+		color.New(color.FgGreen).Add(color.Bold).Sprintf("Scanned files: ") + strconv.Itoa(len(searchResults)) +
+			color.New(color.FgGreen).Add(color.Bold).Sprintf("\nValid documents: ") + strconv.Itoa(valid) +
+			color.New(color.FgRed).Add(color.Bold).Sprintf("\nInfected files (%v): ", len(infectedFiles)) + strings.Join(infectedFiles, ", ") + "\n",
+	)
 }
