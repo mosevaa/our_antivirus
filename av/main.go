@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
 	"our_antivirus/av/avs"
 	"our_antivirus/av/database"
-	"our_antivirus/av/scan"
 	searchtree "our_antivirus/av/search-tree"
 	"strconv"
 	"strings"
@@ -64,8 +65,45 @@ func run() error {
 
 	} else if strings.Contains(string(*cmd), "quarantine") {
 		fmt.Println("quarantine")
-		// как пример
-		scan.Restore("../quarantine/file.txt", "../folder/file.txt")
+
+		quarantineDir := "../quarantine"
+		whitelistDir := "../quarantine_white_list"
+
+		// Проверяем, существует ли каталог карантины
+		if _, err := os.Stat(quarantineDir); os.IsNotExist(err) {
+			fmt.Printf("Каталог %s не существует\n", quarantineDir)
+			return err
+		}
+
+		// Создаем каталог quarantine_white_list, если он еще не существует
+		if _, err := os.Stat(whitelistDir); os.IsNotExist(err) {
+			os.Mkdir(whitelistDir, 0755)
+		}
+
+		// Получаем список файлов в каталоге карантины
+		files, err := ioutil.ReadDir(quarantineDir)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+
+		// Переносим каждый файл в папку quarantine_white_list и устанавливаем разрешение 0644
+		for _, file := range files {
+			oldPath := quarantineDir + "/" + file.Name()
+			newPath := whitelistDir + "/" + file.Name()
+			err = os.Rename(oldPath, newPath)
+			if err != nil {
+				fmt.Printf("Не удалось переместить файл %s: %v\n", file.Name(), err)
+			} else {
+				err = os.Chmod(newPath, 0644)
+				if err != nil {
+					fmt.Printf("Не удалось установить разрешение на файл %s: %v\n", file.Name(), err)
+				} else {
+					fmt.Printf("Файл %s перемещен в %s и установлено разрешение 0644\n", file.Name(), newPath)
+				}
+			}
+		}
+
 	} else {
 		fmt.Println("error")
 	}
