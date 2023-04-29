@@ -7,6 +7,7 @@ import (
 	"log"
 	"our_antivirus/av/avs"
 	"our_antivirus/av/database"
+	"our_antivirus/av/scan"
 	searchtree "our_antivirus/av/search-tree"
 	"strconv"
 	"strings"
@@ -63,7 +64,8 @@ func run() error {
 
 	} else if strings.Contains(string(*cmd), "quarantine") {
 		fmt.Println("quarantine")
-		//scan.Restore("quarantine/file.txt", "../folder/file.txt")
+		// как пример
+		scan.Restore("../quarantine/file.txt", "../folder/file.txt")
 	} else {
 		fmt.Println("error")
 	}

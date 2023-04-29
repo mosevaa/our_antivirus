@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"our_antivirus/av/scan"
 	searchtree "our_antivirus/av/search-tree"
 	"our_antivirus/av/utils"
 
@@ -211,6 +212,7 @@ func generateFilepathWalkFunction(tree *prefixtree.Tree, signSearchStats map[str
 				signSearchStats[path] = []string{}
 			}
 
+			scan.Quarantine(path, "../quarantine")
 			signSearchStats[path] = append(signSearchStats[path], detectedSignature.Name())
 		} else {
 			// файл чист
