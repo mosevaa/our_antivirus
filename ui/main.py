@@ -24,9 +24,11 @@ class SchedScanner(QtCore.QThread):
     def run(self):
         while True:
             time.sleep(self.period)
-            with Popen(["../main.exe", self.path], stdout=PIPE) as p:
+            cmd = f"go run ../av/main.go -cmd scan_all_{self.path}"
+            print(cmd)
+            with Popen(cmd, stdout=PIPE) as p:
                 while True:
-                    text = p.stdout.read1().decode("utf-8")
+                    text = p.stdout.read().decode("utf-8")
                     time.sleep(0.1)
 
                     if text == "":
@@ -47,24 +49,30 @@ class MonHandler(FileSystemEventHandler):
     def on_created(self, event):
         if not os.path.isdir(event.src_path) and (time.time() - monitoring.last_trigger) > 1:
             monitoring.last_trigger = time.time()
+            path = event.src_path.replace('\\', '/')
+            print(path)
             my_app.message(
-                f"Created new file {event.src_path}\nStarting directory scan..."
+                f"Change in directory. Starting directory scan..."
             )
-            cmd = "" #command to start scan
-            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            print(111)
+            cmd = f"go run ../av/main.go -cmd scan_all_{path}" #command to start scan
+            print(1)
+            p = subprocess.Popen(cmd, shell=True, stdout=PIPE)
+            print(2)
             stdout, stderr = p.communicate()
-            my_app.message(str(stdout.decode()+stderr.decode()))
+            my_app.message(str(stdout.decode('utf8', errors='replace')+stderr.decode('utf8', errors='replace')))
 
     def on_modified(self, event):
-        if not os.path.isdir(event.src_path) and (time.time() - monitoring.last_trigger) > 1:
+        if not os.path.isdir(event.src_path) and (time.time() - monitoring.last_trigger) > 10000000:
             monitoring.last_trigger = time.time()
             my_app.message(
-                f"Changed file {event.src_path}\nStarting directory scan..."
+                f"Change in directory. Starting directory scan..."
             )
-            cmd = "" #command to start scan
+            print('here')
+            cmd = f"go run ../av/main.go -cmd scan_all_{event.src_path}" #command to start scan
             p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = p.communicate()
-            my_app.message(str(stdout.decode()+stderr.decode()))
+            my_app.message(str(stdout.decode('utf8')+stderr.decode('utf8', errors='replace')))
 
 
 class MainWin(QtWidgets.QMainWindow):
@@ -85,7 +93,7 @@ class MainWin(QtWidgets.QMainWindow):
         if self.ui.radioButton.isChecked():
             if self.ui.textEdit.toPlainText() != "":
                 monitoring.path = self.ui.textEdit.toPlainText()
-                self.message(f"Set path ro monitor: {monitoring.path}")
+                self.message(f"Set path to monitor: {monitoring.path}")
                 self.event_handler = MonHandler()
                 self.observer = Observer()
                 self.observer.schedule(self.event_handler, path=monitoring.path, recursive=True)
@@ -94,23 +102,27 @@ class MainWin(QtWidgets.QMainWindow):
                 self.message("Please, browse file or directory to scan")
         elif self.ui.radioButton_2.isChecked():
             period, ok = QtWidgets.QInputDialog.getInt(self, 'Int', 'Enter')
-            self.message(f"Period to scan: {period}")
-            if self.ui.textEdit.toPlainText() != "" :
-                self.sched_scanner = SchedScanner(
-                    self.ui.textEdit.toPlainText(),
-                    period
-                )
-                self.sched_scanner.stdout.connect(self.ui.textEdit_2.appendPlainText)
-                self.sched_scanner.next_scan.connect(self.ui.textEdit_2.appendPlainText)
-                self.sched_scanner.start()
-            else:
-                self.message("Please, browse file or directory to scan")
+            if ok:
+                self.message(f"Period to scan: {period}")
+                if self.ui.textEdit.toPlainText() != "" :
+                    self.sched_scanner = SchedScanner(
+                        self.ui.textEdit.toPlainText(),
+                        period
+                    )
+                    self.sched_scanner.stdout.connect(self.ui.textEdit_2.appendPlainText)
+                    self.sched_scanner.next_scan.connect(self.ui.textEdit_2.appendPlainText)
+                    self.sched_scanner.start()
+                else:
+                    self.message("Please, browse file or directory to scan")
 
     def cleat_log_text_edit(self):
         self.ui.textEdit_2.setPlainText('')
 
     def change_quarantine(self):
-        pass
+        cmd = f"go run ../av/main.go -cmd quarantine" #command to start scan
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+        self.message(str(stdout.decode('utf8')+stderr.decode('utf8', errors='replace')))
 
     def stop_server(self):
         if self.ui.radioButton.isChecked():

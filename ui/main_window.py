@@ -96,13 +96,9 @@ class Ui_MainWindow(object):
         self.radioButton.setText(_translate("MainWindow", "Мониторинг"))
         self.radioButton_2.setText(_translate("MainWindow", "Сканирование по расписанию"))
         self.pushButton_2.setText(_translate("MainWindow", "Запуск сканирования"))
-        self.label_2.setText(_translate("MainWindow", "Результат сканирования:\n"
-"Просканированные объекты: \n"
-"Найденные угрозы: \n"
-"Зараженные объекты: "
-                                                      ""))
+        self.label_2.setText(_translate("MainWindow", ""))
         self.pushButton_4.setText(_translate("MainWindow", "Очистить окно вывода"))
-        self.pushButton_3.setText(_translate("MainWindow", "Редактировать карантин"))
+        self.pushButton_3.setText(_translate("MainWindow", "Очистить карантин"))
         self.pushButton_5.setText(_translate("MainWindow", "Остановить сервис"))
 
 
